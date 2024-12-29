@@ -84,9 +84,12 @@ export default function SalesPage() {
   return (
     <LayoutWithNav>
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold dark:text-white">Gestione Vendite</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold dark:text-white">
+            Gestione Vendite
+          </h1>
+        </div>
 
-        {/* Status Cards */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {Object.entries(SALE_STATUS).map(([key, status]) => (
             <Card
@@ -227,7 +230,6 @@ export default function SalesPage() {
           </div>
         </div>
 
-        {/* Sale Details Dialog */}
         <Dialog
           open={!!selectedSaleId}
           onOpenChange={(open) => !open && setSelectedSaleId(null)}

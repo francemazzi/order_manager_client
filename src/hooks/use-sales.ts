@@ -83,3 +83,67 @@ export function useSaleDetails(saleId: number | null) {
     enabled: !!saleId,
   });
 }
+
+export type SalesAnalysisItemData = {
+  item_name: string;
+  sku: string;
+  total_quantity: number;
+  total_revenue: number;
+  average_price: number;
+};
+
+export type DailySalesData = {
+  date: string;
+  revenue: number;
+  quantity: number;
+};
+
+export type TopSellingItem = {
+  item_name: string;
+  sku: string;
+  quantity: number;
+  revenue: number;
+};
+
+export type CompanyAnalysis = {
+  company_name: string;
+  total_sales: number;
+  total_items_sold: number;
+  average_order_value: number;
+  items_analysis: SalesAnalysisItemData[];
+  daily_sales: DailySalesData[];
+  top_selling_items: TopSellingItem[];
+};
+
+export type SalesAnalysis = {
+  period: {
+    start_date: string;
+    end_date: string;
+  };
+  data: Record<string, CompanyAnalysis>;
+};
+
+export function useSalesAnalysis(startDate: string, endDate: string) {
+  const urlPy = process.env.NEXT_PUBLIC_URL_PY;
+  if (!urlPy) {
+    throw new Error("NEXT_PUBLIC_URL_PY is not defined");
+  }
+
+  return useQuery({
+    queryKey: ["sales-analysis", startDate, endDate],
+    queryFn: async () => {
+      const response = await fetch(
+        `${urlPy}/api/analytics/sales?start_date=${startDate}&end_date=${endDate}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch sales analysis");
+      }
+      return response.json() as Promise<SalesAnalysis>;
+    },
+  });
+}
