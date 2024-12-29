@@ -35,24 +35,32 @@ function isAuthenticated(request: NextRequest): boolean {
 export function middleware(request: NextRequest) {
   console.log("Middleware called for path:", request.nextUrl.pathname);
 
-  if (request.nextUrl.pathname.startsWith("/dashboard")) {
-    const authenticated = isAuthenticated(request);
-    console.log("Authentication check for dashboard:", authenticated);
-
-    if (!authenticated) {
-      console.log("Redirecting to auth...");
-      return NextResponse.redirect(new URL("/auth", request.url));
-    }
+  const redirectCount = parseInt(
+    request.headers.get("X-Redirect-Count") || "0"
+  );
+  if (redirectCount > 2) {
+    console.log("Too many redirects, returning 400");
+    return new NextResponse(null, {
+      status: 400,
+      statusText: "Too many redirects",
+    });
   }
 
-  if (request.nextUrl.pathname.startsWith("/auth")) {
-    const authenticated = isAuthenticated(request);
-    console.log("Authentication check for auth:", authenticated);
+  const authenticated = isAuthenticated(request);
+  console.log("Authentication check:", authenticated);
 
-    if (authenticated) {
-      console.log("Redirecting to dashboard...");
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
+  if (request.nextUrl.pathname.startsWith("/dashboard") && !authenticated) {
+    console.log("Redirecting to auth...");
+    const response = NextResponse.redirect(new URL("/auth", request.url));
+    response.headers.set("X-Redirect-Count", (redirectCount + 1).toString());
+    return response;
+  }
+
+  if (request.nextUrl.pathname.startsWith("/auth") && authenticated) {
+    console.log("Redirecting to dashboard...");
+    const response = NextResponse.redirect(new URL("/dashboard", request.url));
+    response.headers.set("X-Redirect-Count", (redirectCount + 1).toString());
+    return response;
   }
 
   return NextResponse.next();

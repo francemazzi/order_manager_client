@@ -78,7 +78,7 @@ export default function AuthPage() {
     },
     onSuccess: (data) => {
       console.log("Setting cookies with:", data);
-      setAuthCookies(data.access_token, data.user);
+      setAuthCookies(data.access_token);
       toast({
         title: "Login effettuato con successo",
         description: "Benvenuto!",

@@ -17,31 +17,22 @@ interface User {
   updated_at: string;
 }
 
-export const setAuthCookies = (access_token: string, user: User) => {
-  console.log("Setting auth cookies...");
+export const setAuthCookies = (access_token: string) => {
+  console.log("Setting auth cookie...");
   try {
     const decodedToken = jwtDecode<JWTPayload>(access_token);
     const expiresIn = new Date(decodedToken.exp * 1000);
-
-    console.log("Token expires at:", expiresIn);
-
     Cookies.set("token", access_token, { expires: expiresIn });
-    Cookies.set("userId", String(user.id), { expires: expiresIn });
-    Cookies.set("user", JSON.stringify(user), { expires: expiresIn });
-
-    console.log("Auth cookies set successfully");
+    console.log("Auth cookie set successfully");
   } catch (error) {
-    console.error("Error setting auth cookies:", error);
-    throw error;
+    console.error("Error setting auth cookie:", error);
   }
 };
 
 export const clearAuthCookies = () => {
-  console.log("Clearing auth cookies...");
+  console.log("Clearing auth cookie...");
   Cookies.remove("token");
-  Cookies.remove("userId");
-  Cookies.remove("user");
-  console.log("Auth cookies cleared");
+  console.log("Auth cookie cleared");
 };
 
 export const isAuthenticated = () => {
@@ -67,19 +58,29 @@ export const isAuthenticated = () => {
   }
 };
 
-export const getUser = (): User | null => {
-  console.log("Getting user from cookies...");
-  const userStr = Cookies.get("user");
-  console.log("User string found:", !!userStr);
-
-  if (!userStr) return null;
+export const getUser = async (): Promise<User | null> => {
+  console.log("Getting user from token...");
+  const token = Cookies.get("token");
+  if (!token) return null;
 
   try {
-    const user = JSON.parse(userStr);
-    console.log("User parsed successfully");
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/users/me`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch user");
+    }
+
+    const user = await response.json();
     return user;
   } catch (error) {
-    console.error("Error parsing user:", error);
+    console.error("Error getting user:", error);
     return null;
   }
 };
