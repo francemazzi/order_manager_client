@@ -6,7 +6,7 @@ export default function ItemPage() {
   return (
     <LayoutWithNav>
       <h1 className="text-2xl font-bold mb-6">Gestione Articoli</h1>
-      {/* Contenuto della pagina articoli */}
+      {/* TODO:  Contenuto della pagina articoli */}
     </LayoutWithNav>
   );
 }

@@ -6,7 +6,7 @@ export default function DashboardPage() {
   return (
     <LayoutWithNav>
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
-      {/* Contenuto della dashboard */}
+      {/* TODO:  Contenuto della dashboard */}
     </LayoutWithNav>
   );
 }
