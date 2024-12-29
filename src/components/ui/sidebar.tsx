@@ -2,7 +2,14 @@
 
 import { Button } from "./button";
 import { useRouter, usePathname } from "next/navigation";
-import { BarChart, ShoppingCart, Package, Users, UserCog } from "lucide-react";
+import {
+  BarChart,
+  ShoppingCart,
+  Package,
+  Users,
+  UserCog,
+  DollarSign,
+} from "lucide-react";
 
 export function Sidebar() {
   const router = useRouter();
@@ -13,6 +20,11 @@ export function Sidebar() {
       path: "/dashboard",
       icon: BarChart,
       label: "Dashboard",
+    },
+    {
+      path: "/sales",
+      icon: DollarSign,
+      label: "Vendite",
     },
     {
       path: "/order",
