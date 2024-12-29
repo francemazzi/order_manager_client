@@ -9,10 +9,14 @@ interface LayoutWithNavProps {
 
 export function LayoutWithNav({ children }: LayoutWithNavProps) {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen flex flex-col">
       <Header />
-      <Sidebar />
-      <main className="ml-16 max-w-7xl px-4 py-8">{children}</main>
+      <div className="flex-1 flex">
+        <Sidebar />
+        <main className="flex-1 ml-16 overflow-y-auto">
+          <div className="max-w-7xl px-4 py-8">{children}</div>
+        </main>
+      </div>
     </div>
   );
 }

@@ -32,7 +32,7 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="w-16 min-h-screen bg-white border-r border-gray-200 fixed left-0 top-16">
+    <aside className="w-16 h-full bg-white border-r border-gray-200">
       <div className="flex flex-col items-center py-4 space-y-4">
         {navItems.map((item) => (
           <Button
