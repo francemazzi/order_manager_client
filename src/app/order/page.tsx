@@ -156,7 +156,6 @@ export default function OrderPage() {
       <div className="space-y-4">
         <h1 className="text-2xl font-bold dark:text-white">Gestione Ordini</h1>
 
-        {/* Status Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {Object.entries(ORDER_STATUS).map(([key, status]) => (
             <Card
@@ -372,7 +371,6 @@ export default function OrderPage() {
           </div>
         </div>
 
-        {/* Order Details Dialog */}
         <Dialog
           open={!!selectedOrderId}
           onOpenChange={(open) => !open && setSelectedOrderId(null)}
