@@ -2,7 +2,7 @@
 
 import { Button } from "./button";
 import { useRouter, usePathname } from "next/navigation";
-import { BarChart, ShoppingCart, Package, Users } from "lucide-react";
+import { BarChart, ShoppingCart, Package, Users, UserCog } from "lucide-react";
 
 export function Sidebar() {
   const router = useRouter();
@@ -28,6 +28,11 @@ export function Sidebar() {
       path: "/supplier",
       icon: Users,
       label: "Fornitori",
+    },
+    {
+      path: "/users",
+      icon: UserCog,
+      label: "Gestione Utenti",
     },
   ];
 
