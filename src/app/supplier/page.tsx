@@ -35,6 +35,7 @@ const COMPANY_TAGS = {
   BUYER: "buyer",
   SUPPLIER: "supplier",
   CUSTOMER: "customer",
+  NULL: null,
   NONE: "none",
 } as const;
 
@@ -59,8 +60,8 @@ export default function SupplierPage() {
     tag: "",
   });
 
-  const filteredCompanies = companies?.filter(
-    (company) => company.tag === selectedTag
+  const filteredCompanies = companies?.filter((company) =>
+    selectedTag === COMPANY_TAGS.NONE ? true : company.tag === selectedTag
   );
 
   useEffect(() => {
@@ -76,26 +77,60 @@ export default function SupplierPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createCompany.mutateAsync(formData);
+      if (!formData.tag) {
+        toast({
+          title: "Errore",
+          description: "Seleziona un tipo di azienda",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log("Submitting form data:", formData);
+
+      const dataToSubmit = {
+        ...formData,
+        tag: formData.tag.toUpperCase(),
+      };
+
+      await createCompany.mutateAsync(dataToSubmit);
       toast({
         title: "Successo",
-        description: "Fornitore creato con successo",
+        description: "Azienda creata con successo",
       });
       setOpen(false);
+      setSelectedTag(formData.tag);
+      const selectedTag = formData.tag;
       setFormData({
         name: "",
         vat_number: "",
         email: "",
         address: "",
         phone: "",
-        tag: "",
+        tag: selectedTag,
       });
-    } catch {
-      toast({
-        title: "Errore",
-        description: "Impossibile creare il fornitore",
-        variant: "destructive",
-      });
+    } catch (error: unknown) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "message" in error &&
+        typeof error.message === "string" &&
+        error.message.includes(
+          'duplicate key value violates unique constraint "companies_vat_number_key"'
+        )
+      ) {
+        toast({
+          title: "Errore",
+          description: "Esiste già un'azienda con questa partita IVA",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Errore",
+          description: "Impossibile creare l'azienda",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -156,7 +191,8 @@ export default function SupplierPage() {
         return "Fornitore";
       case COMPANY_TAGS.CUSTOMER:
         return "Cliente";
-      case COMPANY_TAGS.NONE:
+      case COMPANY_TAGS.NULL:
+        return "Senza tag";
       default:
         return "Nessuno";
     }
@@ -313,6 +349,7 @@ export default function SupplierPage() {
                     <SelectItem value={COMPANY_TAGS.BUYER}>
                       Acquirenti
                     </SelectItem>
+                    <SelectItem value={COMPANY_TAGS.NULL}>Senza tag</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
