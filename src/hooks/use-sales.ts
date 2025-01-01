@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export type SaleItem = {
   id: number;
@@ -144,6 +144,55 @@ export function useSalesAnalysis(startDate: string, endDate: string) {
         throw new Error("Failed to fetch sales analysis");
       }
       return response.json() as Promise<SalesAnalysis>;
+    },
+  });
+}
+
+export type CreateSaleItem = {
+  item_id: number;
+  quantity: number;
+  unit_price: number;
+};
+
+export type CreateSaleDTO = {
+  customer_name: string;
+  customer_email: string;
+  customer_address: string;
+  customer_phone: string;
+  company_id: number;
+  items: {
+    item_id: number;
+    quantity: number;
+    unit_price: number;
+  }[];
+  notes: string;
+  status: SaleStatus;
+};
+
+export function useCreateSale() {
+  const queryClient = useQueryClient();
+  const urlPy = process.env.NEXT_PUBLIC_URL_PY;
+  if (!urlPy) {
+    throw new Error("NEXT_PUBLIC_URL_PY is not defined");
+  }
+
+  return useMutation({
+    mutationFn: async (data: CreateSaleDTO) => {
+      const response = await fetch(`${urlPy}/api/sales`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to create sale");
+      }
+      return response.json() as Promise<Sale>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [SALES_QUERY_KEY] });
     },
   });
 }

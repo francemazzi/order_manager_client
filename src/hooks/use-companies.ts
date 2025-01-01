@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export type Company = {
   id: number;
@@ -7,9 +7,18 @@ export type Company = {
   email: string;
   address: string;
   phone: string;
+  tag: string;
 };
 
-export type CreateCompanyDTO = Omit<Company, "id">;
+export type CreateCompanyDTO = {
+  name: string;
+  vat_number: string;
+  email: string;
+  address: string;
+  phone: string;
+  tag: string;
+};
+
 export type UpdateCompanyDTO = Partial<CreateCompanyDTO>;
 
 const COMPANIES_QUERY_KEY = "companies";
@@ -31,7 +40,8 @@ export function useCompanies() {
       if (!response.ok) {
         throw new Error("Failed to fetch companies");
       }
-      return response.json() as Promise<Company[]>;
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
     },
   });
 }

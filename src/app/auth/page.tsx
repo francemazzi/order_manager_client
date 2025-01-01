@@ -4,6 +4,14 @@ import { Button, Input, Label, useToast } from "@/components/ui";
 import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { setAuthCookies, isAuthenticated } from "@/lib/auth";
+import { useCompanies } from "@/hooks/use-companies";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const API_URL = process.env.NEXT_PUBLIC_URL_PY;
 
@@ -21,6 +29,7 @@ interface RegisterData {
   password: string;
   first_name: string;
   last_name: string;
+  company_id: number | null;
 }
 
 export default function AuthPage() {
@@ -30,8 +39,10 @@ export default function AuthPage() {
     password: "",
     first_name: "",
     last_name: "",
+    company_id: null as number | null,
   });
   const { toast } = useToast();
+  const { data: companies } = useCompanies();
 
   useEffect(() => {
     const checkAuth = () => {
@@ -105,12 +116,7 @@ export default function AuthPage() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            email: data.email,
-            password: data.password,
-            first_name: data.first_name,
-            last_name: data.last_name,
-          }),
+          body: JSON.stringify(data),
         });
 
         const responseData = await response.json();
@@ -132,6 +138,13 @@ export default function AuthPage() {
         description: "Ora puoi effettuare il login",
       });
       setIsLogin(true);
+      setFormData({
+        email: "",
+        password: "",
+        first_name: "",
+        last_name: "",
+        company_id: null as number | null,
+      });
     },
     onError: (error: Error) => {
       toast({
@@ -175,6 +188,7 @@ export default function AuthPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, first_name: e.target.value })
                   }
+                  required
                 />
               </div>
               <div>
@@ -186,7 +200,35 @@ export default function AuthPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, last_name: e.target.value })
                   }
+                  required
                 />
+              </div>
+              <div>
+                <Label htmlFor="company">Azienda</Label>
+                <Select
+                  value={
+                    formData.company_id ? String(formData.company_id) : "null"
+                  }
+                  onValueChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      company_id: value === "null" ? null : Number(value),
+                    })
+                  }
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleziona la tua azienda" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="null">Sono di Order Manager</SelectItem>
+                    {companies?.map((company) => (
+                      <SelectItem key={company.id} value={String(company.id)}>
+                        {company.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </>
           )}

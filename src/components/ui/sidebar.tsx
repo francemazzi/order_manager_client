@@ -39,7 +39,7 @@ export function Sidebar() {
     {
       path: "/supplier",
       icon: Users,
-      label: "Fornitori",
+      label: "Stakeholders",
     },
     {
       path: "/users",

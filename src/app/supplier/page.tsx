@@ -23,6 +23,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EditableCell } from "@/components/ui/editable-cell";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const COMPANY_TAGS = {
+  BUYER: "buyer",
+  SUPPLIER: "supplier",
+  CUSTOMER: "customer",
+  NONE: "none",
+} as const;
 
 export default function SupplierPage() {
   const { data: companies, isLoading, error } = useCompanies();
@@ -33,13 +47,21 @@ export default function SupplierPage() {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editedData, setEditedData] = useState<UpdateCompanyDTO>({});
+  const [selectedTag, setSelectedTag] = useState<string | null>(
+    COMPANY_TAGS.SUPPLIER
+  );
   const [formData, setFormData] = useState<CreateCompanyDTO>({
     name: "",
     vat_number: "",
     email: "",
     address: "",
     phone: "",
+    tag: "",
   });
+
+  const filteredCompanies = companies?.filter(
+    (company) => company.tag === selectedTag
+  );
 
   useEffect(() => {
     if (error) {
@@ -66,6 +88,7 @@ export default function SupplierPage() {
         email: "",
         address: "",
         phone: "",
+        tag: "",
       });
     } catch {
       toast({
@@ -125,108 +148,174 @@ export default function SupplierPage() {
     setEditedData({});
   };
 
+  const getDisplayTag = (tag: string | null) => {
+    switch (tag) {
+      case COMPANY_TAGS.BUYER:
+        return "Acquirente";
+      case COMPANY_TAGS.SUPPLIER:
+        return "Fornitore";
+      case COMPANY_TAGS.CUSTOMER:
+        return "Cliente";
+      case COMPANY_TAGS.NONE:
+      default:
+        return "Nessuno";
+    }
+  };
+
   return (
     <LayoutWithNav>
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold dark:text-white">
-          Gestione Fornitori
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold dark:text-white">
+            Gestione Aziende
+          </h1>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Nuova azienda
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Crea Nuova Azienda</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nome Azienda</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="vat_number">Partita IVA</Label>
+                  <Input
+                    id="vat_number"
+                    value={formData.vat_number}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        vat_number: e.target.value,
+                      })
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="address">Indirizzo</Label>
+                  <Input
+                    id="address"
+                    value={formData.address}
+                    onChange={(e) =>
+                      setFormData({ ...formData, address: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Telefono</Label>
+                  <Input
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) =>
+                      setFormData({ ...formData, phone: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tipo Azienda</Label>
+                  <Select
+                    value={formData.tag}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, tag: value })
+                    }
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleziona tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={COMPANY_TAGS.SUPPLIER}>
+                        Fornitore
+                      </SelectItem>
+                      <SelectItem value={COMPANY_TAGS.CUSTOMER}>
+                        Cliente
+                      </SelectItem>
+                      <SelectItem value={COMPANY_TAGS.BUYER}>
+                        Acquirente
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setOpen(false)}
+                  >
+                    Annulla
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={createCompany.isPending || !formData.tag}
+                  >
+                    {createCompany.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Crea"
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold dark:text-white">
-                Lista Fornitori
-              </h2>
-              <Dialog open={open} onOpenChange={setOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    Nuovo Fornitore
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Crea Nuovo Fornitore</DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Nome Azienda</Label>
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) =>
-                          setFormData({ ...formData, name: e.target.value })
-                        }
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="vat_number">Partita IVA</Label>
-                      <Input
-                        id="vat_number"
-                        value={formData.vat_number}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            vat_number: e.target.value,
-                          })
-                        }
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) =>
-                          setFormData({ ...formData, email: e.target.value })
-                        }
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Indirizzo</Label>
-                      <Input
-                        id="address"
-                        value={formData.address}
-                        onChange={(e) =>
-                          setFormData({ ...formData, address: e.target.value })
-                        }
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Telefono</Label>
-                      <Input
-                        id="phone"
-                        value={formData.phone}
-                        onChange={(e) =>
-                          setFormData({ ...formData, phone: e.target.value })
-                        }
-                        required
-                      />
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setOpen(false)}
-                      >
-                        Annulla
-                      </Button>
-                      <Button type="submit" disabled={createCompany.isPending}>
-                        {createCompany.isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          "Crea"
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
+              <div className="flex items-center gap-4">
+                <h2 className="text-lg font-semibold dark:text-white">
+                  Lista Aziende
+                </h2>
+                <Select
+                  value={selectedTag || COMPANY_TAGS.NONE}
+                  onValueChange={(value) => setSelectedTag(value)}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filtra per tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={COMPANY_TAGS.SUPPLIER}>
+                      Fornitori
+                    </SelectItem>
+                    <SelectItem value={COMPANY_TAGS.CUSTOMER}>
+                      Clienti
+                    </SelectItem>
+                    <SelectItem value={COMPANY_TAGS.BUYER}>
+                      Acquirenti
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             {isLoading ? (
               <div className="flex justify-center items-center h-32">
@@ -252,13 +341,16 @@ export default function SupplierPage() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         P.IVA
                       </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Tipo
+                      </th>
                       <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         Azioni
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {companies?.map((company) => (
+                    {filteredCompanies?.map((company) => (
                       <tr
                         key={company.id}
                         className="hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -311,6 +403,45 @@ export default function SupplierPage() {
                               })
                             }
                           />
+                        </td>
+                        <td
+                          className="px-4 py-4 whitespace-nowrap cursor-pointer"
+                          onClick={() => handleEdit(company.id)}
+                        >
+                          {editingId === company.id ? (
+                            <div className="flex items-center gap-2">
+                              <Select
+                                value={company.tag || COMPANY_TAGS.NONE}
+                                onValueChange={(value) =>
+                                  setEditedData({
+                                    ...editedData,
+                                    tag:
+                                      value === COMPANY_TAGS.NONE ? "" : value,
+                                  })
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Seleziona tipo" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value={COMPANY_TAGS.NONE}>
+                                    Nessuno
+                                  </SelectItem>
+                                  <SelectItem value={COMPANY_TAGS.SUPPLIER}>
+                                    Fornitore
+                                  </SelectItem>
+                                  <SelectItem value={COMPANY_TAGS.CUSTOMER}>
+                                    Cliente
+                                  </SelectItem>
+                                  <SelectItem value={COMPANY_TAGS.BUYER}>
+                                    Acquirente
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          ) : (
+                            getDisplayTag(company.tag)
+                          )}
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-right">
                           <div className="flex justify-end gap-2">
