@@ -35,8 +35,7 @@ const COMPANY_TAGS = {
   BUYER: "buyer",
   SUPPLIER: "supplier",
   CUSTOMER: "customer",
-  NULL: null,
-  NONE: "none",
+  ALL: "all",
 } as const;
 
 export default function SupplierPage() {
@@ -57,11 +56,11 @@ export default function SupplierPage() {
     email: "",
     address: "",
     phone: "",
-    tag: "",
+    tag: COMPANY_TAGS.SUPPLIER,
   });
 
   const filteredCompanies = companies?.filter((company) =>
-    selectedTag === COMPANY_TAGS.NONE ? true : company.tag === selectedTag
+    selectedTag === COMPANY_TAGS.ALL ? true : company.tag === selectedTag
   );
 
   useEffect(() => {
@@ -77,6 +76,8 @@ export default function SupplierPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      console.log("Form data before submission:", formData);
+
       if (!formData.tag) {
         toast({
           title: "Errore",
@@ -86,12 +87,16 @@ export default function SupplierPage() {
         return;
       }
 
-      console.log("Submitting form data:", formData);
-
-      const dataToSubmit = {
-        ...formData,
-        tag: formData.tag.toUpperCase(),
+      const dataToSubmit: CreateCompanyDTO = {
+        name: formData.name,
+        vat_number: formData.vat_number,
+        email: formData.email,
+        address: formData.address,
+        phone: formData.phone,
+        tag: formData.tag,
       };
+
+      console.log("Data being sent to server:", dataToSubmit);
 
       await createCompany.mutateAsync(dataToSubmit);
       toast({
@@ -100,16 +105,16 @@ export default function SupplierPage() {
       });
       setOpen(false);
       setSelectedTag(formData.tag);
-      const selectedTag = formData.tag;
       setFormData({
         name: "",
         vat_number: "",
         email: "",
         address: "",
         phone: "",
-        tag: selectedTag,
+        tag: formData.tag,
       });
-    } catch (error: unknown) {
+    } catch (error) {
+      console.error("Error details:", error);
       if (
         error &&
         typeof error === "object" &&
@@ -191,8 +196,6 @@ export default function SupplierPage() {
         return "Fornitore";
       case COMPANY_TAGS.CUSTOMER:
         return "Cliente";
-      case COMPANY_TAGS.NULL:
-        return "Senza tag";
       default:
         return "Nessuno";
     }
@@ -280,9 +283,14 @@ export default function SupplierPage() {
                   <Label>Tipo Azienda</Label>
                   <Select
                     value={formData.tag}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, tag: value })
-                    }
+                    onValueChange={(value) => {
+                      console.log("Selected value in onValueChange:", value);
+                      setFormData((prev) => {
+                        const newData = { ...prev, tag: value };
+                        console.log("New form data after tag update:", newData);
+                        return newData;
+                      });
+                    }}
                     required
                   >
                     <SelectTrigger>
@@ -333,13 +341,14 @@ export default function SupplierPage() {
                   Lista Aziende
                 </h2>
                 <Select
-                  value={selectedTag || COMPANY_TAGS.NONE}
+                  value={selectedTag || COMPANY_TAGS.ALL}
                   onValueChange={(value) => setSelectedTag(value)}
                 >
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Filtra per tipo" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value={COMPANY_TAGS.ALL}>Tutti</SelectItem>
                     <SelectItem value={COMPANY_TAGS.SUPPLIER}>
                       Fornitori
                     </SelectItem>
@@ -349,7 +358,6 @@ export default function SupplierPage() {
                     <SelectItem value={COMPANY_TAGS.BUYER}>
                       Acquirenti
                     </SelectItem>
-                    <SelectItem value={COMPANY_TAGS.NULL}>Senza tag</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -448,12 +456,12 @@ export default function SupplierPage() {
                           {editingId === company.id ? (
                             <div className="flex items-center gap-2">
                               <Select
-                                value={company.tag || COMPANY_TAGS.NONE}
+                                value={company.tag || COMPANY_TAGS.ALL}
                                 onValueChange={(value) =>
                                   setEditedData({
                                     ...editedData,
                                     tag:
-                                      value === COMPANY_TAGS.NONE ? "" : value,
+                                      value === COMPANY_TAGS.ALL ? "" : value,
                                   })
                                 }
                               >
@@ -461,7 +469,7 @@ export default function SupplierPage() {
                                   <SelectValue placeholder="Seleziona tipo" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value={COMPANY_TAGS.NONE}>
+                                  <SelectItem value={COMPANY_TAGS.ALL}>
                                     Nessuno
                                   </SelectItem>
                                   <SelectItem value={COMPANY_TAGS.SUPPLIER}>

@@ -7,6 +7,7 @@ import {
   useSaleDetails,
   useCreateSale,
   type CreateSaleDTO,
+  type SaleItem,
 } from "@/hooks/use-sales";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Plus, Trash2 } from "lucide-react";
@@ -19,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -202,6 +204,9 @@ export default function SalesPage() {
             <DialogContent className="max-w-3xl">
               <DialogHeader>
                 <DialogTitle>Crea Nuova Vendita</DialogTitle>
+                <DialogDescription>
+                  Inserisci i dettagli per creare una nuova vendita
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
@@ -445,6 +450,9 @@ export default function SalesPage() {
                         Totale
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Ricavo
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         Stato
                       </th>
                     </tr>
@@ -481,6 +489,31 @@ export default function SalesPage() {
                           {formatCurrency(sale.total_amount)}
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
+                          {sale.items.some(
+                            (item: SaleItem) =>
+                              item.gross_margin !== null &&
+                              item.gross_margin >= 0
+                          )
+                            ? formatCurrency(
+                                sale.items.reduce(
+                                  (acc: number, item: SaleItem) => {
+                                    if (
+                                      item.gross_margin !== null &&
+                                      item.gross_margin >= 0
+                                    ) {
+                                      const revenue =
+                                        (item.total_price * item.gross_margin) /
+                                        100;
+                                      return acc + revenue;
+                                    }
+                                    return acc;
+                                  },
+                                  0
+                                )
+                              )
+                            : "-"}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
                           <Badge
                             className={`${getStatusColor(
                               sale.status
@@ -505,6 +538,7 @@ export default function SalesPage() {
           <DialogContent className="max-w-3xl">
             <DialogHeader>
               <DialogTitle>Dettagli Vendita #{selectedSale?.id}</DialogTitle>
+              <DialogDescription></DialogDescription>
             </DialogHeader>
             {isLoadingSale ? (
               <div className="flex justify-center p-4">
@@ -577,6 +611,9 @@ export default function SalesPage() {
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300">
                             Totale
                           </th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300">
+                            Ricavo
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -597,6 +634,14 @@ export default function SalesPage() {
                             <td className="px-4 py-2 text-sm text-right font-medium">
                               {formatCurrency(item.total_price)}
                             </td>
+                            <td className="px-4 py-2 text-sm text-right font-medium">
+                              {item.gross_margin !== null &&
+                              item.gross_margin >= 0
+                                ? formatCurrency(
+                                    (item.total_price * item.gross_margin) / 100
+                                  )
+                                : "-"}
+                            </td>
                           </tr>
                         ))}
                         <tr className="bg-gray-50 dark:bg-gray-700">
@@ -608,6 +653,32 @@ export default function SalesPage() {
                           </td>
                           <td className="px-4 py-2 text-sm text-right font-bold">
                             {formatCurrency(selectedSale.total_amount)}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-right font-bold">
+                            {selectedSale.items.some(
+                              (item: SaleItem) =>
+                                item.gross_margin !== null &&
+                                item.gross_margin >= 0
+                            )
+                              ? formatCurrency(
+                                  selectedSale.items.reduce(
+                                    (acc: number, item: SaleItem) => {
+                                      if (
+                                        item.gross_margin !== null &&
+                                        item.gross_margin >= 0
+                                      ) {
+                                        const revenue =
+                                          (item.total_price *
+                                            item.gross_margin) /
+                                          100;
+                                        return acc + revenue;
+                                      }
+                                      return acc;
+                                    },
+                                    0
+                                  )
+                                )
+                              : "-"}
                           </td>
                         </tr>
                       </tbody>

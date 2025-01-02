@@ -1,44 +1,80 @@
 "use client";
 
 import { LayoutWithNav } from "../layout-with-nav";
-import { useSalesAnalysis } from "@/hooks/use-sales";
-import { Loader2, CalendarIcon } from "lucide-react";
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format, parseISO } from "date-fns";
-import { it } from "date-fns/locale";
-import { DateRange } from "react-day-picker";
-import { Calendar } from "@/components/ui/calendar";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+  useInventoryAnalysis,
+  type CompanyInventory,
+} from "@/hooks/use-inventory";
+import { Loader2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
   Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-} from "recharts";
+  Legend,
+  ChartEvent,
+  ActiveElement,
+} from "chart.js";
+import { Bar } from "react-chartjs-2";
+import { useState } from "react";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      display: false,
+    },
+    title: {
+      display: true,
+      text: "Valore Stock per Azienda",
+    },
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+    },
+  },
+};
 
 export default function DashboardPage() {
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-    to: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
-  });
-
-  const { data: salesAnalysis, isLoading: isLoadingAnalysis } =
-    useSalesAnalysis(
-      date?.from ? format(date.from, "yyyy-MM-dd") : "",
-      date?.to ? format(date.to, "yyyy-MM-dd") : ""
-    );
+  const { data: inventoryAnalysis, isLoading } = useInventoryAnalysis();
+  const [selectedCompany, setSelectedCompany] =
+    useState<CompanyInventory | null>(null);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("it-IT", {
@@ -47,203 +83,180 @@ export default function DashboardPage() {
     }).format(amount);
   };
 
+  const companies = inventoryAnalysis
+    ? Object.values(inventoryAnalysis.data)
+    : [];
+
+  const companyGroups = [];
+  for (let i = 0; i < companies.length; i += 4) {
+    companyGroups.push(companies.slice(i, i + 4));
+  }
+
+  const handleBarClick = (groupIndex: number, localIndex: number) => {
+    const globalIndex = groupIndex * 4 + localIndex;
+    const company = companies[globalIndex];
+    if (company) {
+      setSelectedCompany(company);
+    }
+  };
+
   return (
     <LayoutWithNav>
-      <div className="space-y-4">
+      <div className="space-y-8">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold dark:text-white">Dashboard</h1>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-[300px] justify-start text-left font-normal",
-                  !date && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {date?.from ? (
-                  date.to ? (
-                    <>
-                      {format(date.from, "d MMMM yyyy", { locale: it })} -{" "}
-                      {format(date.to, "d MMMM yyyy", { locale: it })}
-                    </>
-                  ) : (
-                    format(date.from, "d MMMM yyyy", { locale: it })
-                  )
-                ) : (
-                  <span>Seleziona un periodo</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                initialFocus
-                mode="range"
-                defaultMonth={date?.from}
-                selected={date}
-                onSelect={setDate}
-                numberOfMonths={2}
-                locale={it}
-              />
-            </PopoverContent>
-          </Popover>
         </div>
 
-        {isLoadingAnalysis ? (
+        {isLoading ? (
           <div className="flex justify-center items-center h-32">
             <Loader2 className="h-8 w-8 animate-spin text-gray-500 dark:text-gray-400" />
           </div>
-        ) : salesAnalysis ? (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Object.entries(salesAnalysis.data).map(([id, company]) => (
-                <Card key={id} className="overflow-hidden">
-                  <CardHeader>
-                    <CardTitle>{company.company_name}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          Vendite Totali
-                        </div>
-                        <div className="text-2xl font-bold">
-                          {formatCurrency(company.total_sales)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          Articoli Venduti
-                        </div>
-                        <div className="text-2xl font-bold">
-                          {company.total_items_sold}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                        Articoli Più Venduti
-                      </div>
-                      <div className="space-y-2">
-                        {company.top_selling_items.map((item, index) => (
-                          <div
-                            key={index}
-                            className="flex justify-between items-center"
-                          >
-                            <div className="text-sm">{item.item_name}</div>
-                            <div className="text-sm font-medium">
-                              {item.quantity} pz
+        ) : inventoryAnalysis ? (
+          <div className="px-12">
+            <Carousel>
+              <CarouselContent>
+                {companyGroups.map((group, groupIndex) => (
+                  <CarouselItem key={groupIndex}>
+                    <Card className="p-6">
+                      <CardContent className="h-[400px]">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <div>
+                              <Bar
+                                options={{
+                                  ...chartOptions,
+                                  onClick: (
+                                    _: ChartEvent,
+                                    elements: ActiveElement[]
+                                  ) => {
+                                    if (elements.length > 0) {
+                                      handleBarClick(
+                                        groupIndex,
+                                        elements[0].index
+                                      );
+                                    }
+                                  },
+                                }}
+                                data={{
+                                  labels: group.map(
+                                    (company) => company.company_name
+                                  ),
+                                  datasets: [
+                                    {
+                                      data: group.map(
+                                        (company) => company.total_stock_value
+                                      ),
+                                      backgroundColor:
+                                        "rgba(99, 102, 241, 0.5)",
+                                      borderColor: "rgb(99, 102, 241)",
+                                      borderWidth: 1,
+                                    },
+                                  ],
+                                }}
+                              />
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                          </DialogTrigger>
+                          {selectedCompany && (
+                            <DialogContent className="max-w-4xl">
+                              <DialogHeader>
+                                <DialogTitle>
+                                  {selectedCompany.company_name}
+                                </DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <p className="text-sm text-gray-500">
+                                  Dettagli dell&apos;inventario per{" "}
+                                  {selectedCompany.company_name}
+                                </p>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                                      Valore Totale Stock
+                                    </div>
+                                    <div className="text-2xl font-bold">
+                                      {formatCurrency(
+                                        selectedCompany.total_stock_value
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                                      Totale Articoli
+                                    </div>
+                                    <div className="text-2xl font-bold">
+                                      {selectedCompany.total_items}
+                                    </div>
+                                  </div>
+                                </div>
 
-                    <div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        Valore Medio Ordine
-                      </div>
-                      <div className="text-xl font-bold">
-                        {formatCurrency(company.average_order_value)}
-                      </div>
-                    </div>
-
-                    <div className="mt-4">
-                      <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                        Andamento Vendite
-                      </div>
-                      <div className="h-[200px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart
-                            data={company.daily_sales.map((day) => ({
-                              ...day,
-                              date: format(parseISO(day.date), "dd/MM"),
-                            }))}
-                            margin={{
-                              top: 5,
-                              right: 10,
-                              left: 10,
-                              bottom: 5,
-                            }}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis
-                              dataKey="date"
-                              stroke="#888888"
-                              fontSize={12}
-                            />
-                            <YAxis
-                              stroke="#888888"
-                              fontSize={12}
-                              tickFormatter={(value) =>
-                                `€${value.toLocaleString("it-IT")}`
-                              }
-                            />
-                            <Tooltip
-                              formatter={(value: number) =>
-                                formatCurrency(value)
-                              }
-                            />
-                            <Line
-                              type="monotone"
-                              dataKey="revenue"
-                              stroke="#8884d8"
-                              strokeWidth={2}
-                              dot={false}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    <div className="mt-4">
-                      <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                        Analisi Articoli
-                      </div>
-                      <div className="h-[200px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart
-                            data={company.items_analysis}
-                            margin={{
-                              top: 5,
-                              right: 10,
-                              left: 10,
-                              bottom: 5,
-                            }}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis
-                              dataKey="item_name"
-                              stroke="#888888"
-                              fontSize={12}
-                            />
-                            <YAxis
-                              stroke="#888888"
-                              fontSize={12}
-                              tickFormatter={(value) =>
-                                value.toLocaleString("it-IT")
-                              }
-                            />
-                            <Tooltip
-                              formatter={(value: number) =>
-                                value.toLocaleString("it-IT")
-                              }
-                            />
-                            <Bar
-                              dataKey="total_quantity"
-                              fill="#8884d8"
-                              name="Quantità"
-                            />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                                <div>
+                                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                                    Dettaglio Articoli
+                                  </div>
+                                  <div className="border rounded-lg">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead className="w-[120px]">
+                                            SKU
+                                          </TableHead>
+                                          <TableHead className="w-[200px]">
+                                            Nome
+                                          </TableHead>
+                                          <TableHead className="w-[120px]">
+                                            Stock
+                                          </TableHead>
+                                          <TableHead className="w-[120px]">
+                                            Prezzo
+                                          </TableHead>
+                                          <TableHead className="w-[120px]">
+                                            Valore Stock
+                                          </TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {selectedCompany.items_detail.map(
+                                          (item) => (
+                                            <TableRow key={item.sku}>
+                                              <TableCell className="font-medium">
+                                                {item.sku}
+                                              </TableCell>
+                                              <TableCell>
+                                                {item.item_name}
+                                              </TableCell>
+                                              <TableCell>
+                                                {item.current_stock}{" "}
+                                                {item.stock_unit}
+                                              </TableCell>
+                                              <TableCell>
+                                                {formatCurrency(
+                                                  item.current_price
+                                                )}
+                                              </TableCell>
+                                              <TableCell>
+                                                {formatCurrency(
+                                                  item.stock_value
+                                                )}
+                                              </TableCell>
+                                            </TableRow>
+                                          )
+                                        )}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          )}
+                        </Dialog>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious />
+              <CarouselNext />
+            </Carousel>
           </div>
         ) : null}
       </div>

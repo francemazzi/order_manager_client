@@ -12,9 +12,21 @@ export type Item = {
   company_id: number;
   created_at: string;
   updated_at: string;
+  gross_margin: number;
 };
 
-export type CreateItemDTO = Omit<Item, "id" | "created_at" | "updated_at">;
+export interface CreateItemDTO {
+  name: string;
+  description: string;
+  price: number;
+  price_unit: "EUR";
+  sku: string;
+  stock: number;
+  stock_unit: "PZ";
+  company_id: number;
+  gross_margin: number;
+}
+
 export type UpdateItemDTO = Partial<CreateItemDTO>;
 
 const ITEMS_QUERY_KEY = "items";

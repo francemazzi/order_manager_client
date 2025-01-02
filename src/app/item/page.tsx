@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { EditableCellWithSelect } from "@/components/ui/editable-cell-with-select";
+import { EditableCell } from "@/components/ui/editable-cell";
 
 export default function ItemPage() {
   const { data: companies } = useCompanies();
@@ -55,6 +55,7 @@ export default function ItemPage() {
     stock: 0,
     stock_unit: "PZ",
     company_id: 0,
+    gross_margin: 0,
   });
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const { data: selectedItem, isLoading: isLoadingItem } =
@@ -93,6 +94,7 @@ export default function ItemPage() {
         stock: 0,
         stock_unit: "PZ",
         company_id: 0,
+        gross_margin: 0,
       });
     } catch {
       toast({
@@ -272,6 +274,24 @@ export default function ItemPage() {
                         />
                       </div>
                     </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="gross_margin">Margine Lordo (%)</Label>
+                      <Input
+                        id="gross_margin"
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={0.01}
+                        value={formData.gross_margin}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            gross_margin: Number(e.target.value),
+                          })
+                        }
+                        required
+                      />
+                    </div>
                     <div className="flex justify-end gap-2">
                       <Button
                         type="button"
@@ -316,6 +336,9 @@ export default function ItemPage() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         Quantità
                       </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Margine Lordo
+                      </th>
                       <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         Azioni
                       </th>
@@ -326,10 +349,18 @@ export default function ItemPage() {
                       <tr
                         key={item.id}
                         className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                        onClick={() => setSelectedItemId(item.id)}
+                        onClick={(e) => {
+                          if (!editingId) {
+                            console.log("item.id", e);
+                            setSelectedItemId(item.id);
+                          }
+                        }}
                       >
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <EditableCellWithSelect
+                        <td
+                          className="px-4 py-4 whitespace-nowrap"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <EditableCell
                             value={item.name}
                             isEditing={editingId === item.id}
                             onChange={(value) =>
@@ -340,8 +371,11 @@ export default function ItemPage() {
                             }
                           />
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <EditableCellWithSelect
+                        <td
+                          className="px-4 py-4 whitespace-nowrap"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <EditableCell
                             value={item.description}
                             isEditing={editingId === item.id}
                             onChange={(value) =>
@@ -352,8 +386,11 @@ export default function ItemPage() {
                             }
                           />
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <EditableCellWithSelect
+                        <td
+                          className="px-4 py-4 whitespace-nowrap"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <EditableCell
                             value={item.sku}
                             isEditing={editingId === item.id}
                             onChange={(value) =>
@@ -364,8 +401,11 @@ export default function ItemPage() {
                             }
                           />
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <EditableCellWithSelect
+                        <td
+                          className="px-4 py-4 whitespace-nowrap"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <EditableCell
                             value={String(item.price)}
                             type="number"
                             isEditing={editingId === item.id}
@@ -377,8 +417,11 @@ export default function ItemPage() {
                             }
                           />
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <EditableCellWithSelect
+                        <td
+                          className="px-4 py-4 whitespace-nowrap"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <EditableCell
                             value={String(item.stock)}
                             type="number"
                             isEditing={editingId === item.id}
@@ -390,7 +433,26 @@ export default function ItemPage() {
                             }
                           />
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-right">
+                        <td
+                          className="px-4 py-4 whitespace-nowrap"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <EditableCell
+                            value={String(item.gross_margin)}
+                            type="number"
+                            isEditing={editingId === item.id}
+                            onChange={(value) =>
+                              setEditedData({
+                                ...editedData,
+                                gross_margin: Number(value),
+                              })
+                            }
+                          />
+                        </td>
+                        <td
+                          className="px-4 py-4 whitespace-nowrap text-right"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <div className="flex justify-end gap-2">
                             {editingId === item.id ? (
                               <>
@@ -514,6 +576,14 @@ export default function ItemPage() {
                       {new Date(selectedItem.updated_at).toLocaleString(
                         "it-IT"
                       )}
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Margine Lordo</Label>
+                    <div className="mt-1 text-sm">
+                      {selectedItem.gross_margin}%
                     </div>
                   </div>
                 </div>

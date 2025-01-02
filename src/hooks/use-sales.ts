@@ -8,6 +8,7 @@ export type SaleItem = {
   quantity: number;
   unit_price: number;
   total_price: number;
+  gross_margin: number | null;
 };
 
 export type Sale = {
