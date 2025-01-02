@@ -59,6 +59,7 @@ export default function SalesPage() {
     notes: "",
     status: "pending",
   });
+  const { data: saleItems } = useItems(selectedSale?.company_id || 0);
 
   const customerCompanies = companies?.filter(
     (company) => company.tag === "customer"
@@ -122,7 +123,10 @@ export default function SalesPage() {
   const handleAddItem = () => {
     setFormData((prev) => ({
       ...prev,
-      items: [...prev.items, { item_id: 0, quantity: 1, unit_price: 0 }],
+      items: [
+        ...prev.items,
+        { item_id: 0, quantity: 1, unit_price: 0, gross_margin: 0 },
+      ],
     }));
   };
 
@@ -140,9 +144,21 @@ export default function SalesPage() {
   ) => {
     setFormData((prev) => ({
       ...prev,
-      items: prev.items.map((item, i) =>
-        i === index ? { ...item, [field]: value } : item
-      ),
+      items: prev.items.map((item, i) => {
+        if (i === index) {
+          const selectedItem = items?.find((i) => i.id === Number(value));
+          if (field === "item_id" && selectedItem) {
+            return {
+              ...item,
+              [field]: value,
+              unit_price: selectedItem.price,
+              gross_margin: selectedItem.gross_margin || 0,
+            };
+          }
+          return { ...item, [field]: value };
+        }
+        return item;
+      }),
     }));
   };
 
@@ -186,6 +202,48 @@ export default function SalesPage() {
       currency: "EUR",
     }).format(amount);
   };
+
+  useEffect(() => {
+    if (sales) {
+      sales.forEach((sale) => {
+        console.log(
+          "Items gross margins:",
+          sale.items.map((item: SaleItem) => ({
+            id: item.id,
+            gross_margin: item.gross_margin,
+            total_price: item.total_price,
+          }))
+        );
+      });
+    }
+  }, [sales]);
+
+  useEffect(() => {
+    if (selectedSale) {
+      console.log(
+        "Selected sale items:",
+        selectedSale.items.map((item) => ({
+          id: item.id,
+          name: item.item_name,
+          gross_margin: item.gross_margin,
+          total_price: item.total_price,
+        }))
+      );
+    }
+  }, [selectedSale]);
+
+  useEffect(() => {
+    if (selectedSale && saleItems) {
+      const updatedItems = selectedSale.items.map((item) => {
+        const currentItem = saleItems.find((i) => i.id === item.item_id);
+        return {
+          ...item,
+          gross_margin: currentItem?.gross_margin || 0,
+        };
+      });
+      console.log("Updated items with current gross_margin:", updatedItems);
+    }
+  }, [selectedSale, saleItems]);
 
   return (
     <LayoutWithNav>
@@ -489,29 +547,26 @@ export default function SalesPage() {
                           {formatCurrency(sale.total_amount)}
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
-                          {sale.items.some(
-                            (item: SaleItem) =>
-                              item.gross_margin !== null &&
-                              item.gross_margin >= 0
-                          )
-                            ? formatCurrency(
-                                sale.items.reduce(
-                                  (acc: number, item: SaleItem) => {
-                                    if (
-                                      item.gross_margin !== null &&
-                                      item.gross_margin >= 0
-                                    ) {
-                                      const revenue =
-                                        (item.total_price * item.gross_margin) /
-                                        100;
-                                      return acc + revenue;
-                                    }
-                                    return acc;
-                                  },
-                                  0
-                                )
-                              )
-                            : "-"}
+                          {(() => {
+                            if (!saleItems) return "-";
+                            const total = sale.items.reduce(
+                              (acc: number, item: SaleItem) => {
+                                const currentItem = saleItems.find(
+                                  (i) => i.id === item.item_id
+                                );
+                                const grossMargin =
+                                  currentItem?.gross_margin || 0;
+                                if (grossMargin > 0) {
+                                  return (
+                                    acc + (item.total_price * grossMargin) / 100
+                                  );
+                                }
+                                return acc;
+                              },
+                              0
+                            );
+                            return total > 0 ? formatCurrency(total) : "-";
+                          })()}
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
                           <Badge
@@ -635,12 +690,18 @@ export default function SalesPage() {
                               {formatCurrency(item.total_price)}
                             </td>
                             <td className="px-4 py-2 text-sm text-right font-medium">
-                              {item.gross_margin !== null &&
-                              item.gross_margin >= 0
-                                ? formatCurrency(
-                                    (item.total_price * item.gross_margin) / 100
-                                  )
-                                : "-"}
+                              {(() => {
+                                const currentItem = saleItems?.find(
+                                  (i) => i.id === item.item_id
+                                );
+                                const grossMargin =
+                                  currentItem?.gross_margin || 0;
+                                return grossMargin > 0
+                                  ? formatCurrency(
+                                      (item.total_price * grossMargin) / 100
+                                    )
+                                  : "-";
+                              })()}
                             </td>
                           </tr>
                         ))}
@@ -655,30 +716,27 @@ export default function SalesPage() {
                             {formatCurrency(selectedSale.total_amount)}
                           </td>
                           <td className="px-4 py-2 text-sm text-right font-bold">
-                            {selectedSale.items.some(
-                              (item: SaleItem) =>
-                                item.gross_margin !== null &&
-                                item.gross_margin >= 0
-                            )
-                              ? formatCurrency(
-                                  selectedSale.items.reduce(
-                                    (acc: number, item: SaleItem) => {
-                                      if (
-                                        item.gross_margin !== null &&
-                                        item.gross_margin >= 0
-                                      ) {
-                                        const revenue =
-                                          (item.total_price *
-                                            item.gross_margin) /
-                                          100;
-                                        return acc + revenue;
-                                      }
-                                      return acc;
-                                    },
-                                    0
-                                  )
-                                )
-                              : "-"}
+                            {(() => {
+                              if (!saleItems) return "-";
+                              const total = selectedSale.items.reduce(
+                                (acc: number, item: SaleItem) => {
+                                  const currentItem = saleItems.find(
+                                    (i) => i.id === item.item_id
+                                  );
+                                  const grossMargin =
+                                    currentItem?.gross_margin || 0;
+                                  if (grossMargin > 0) {
+                                    return (
+                                      acc +
+                                      (item.total_price * grossMargin) / 100
+                                    );
+                                  }
+                                  return acc;
+                                },
+                                0
+                              );
+                              return total > 0 ? formatCurrency(total) : "-";
+                            })()}
                           </td>
                         </tr>
                       </tbody>

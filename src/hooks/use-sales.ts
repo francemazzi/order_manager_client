@@ -17,6 +17,7 @@ export type Sale = {
   customer_email: string;
   customer_phone: string;
   customer_address: string;
+  company_id: number;
   date: string;
   notes: string;
   status: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
@@ -153,6 +154,7 @@ export type CreateSaleItem = {
   item_id: number;
   quantity: number;
   unit_price: number;
+  gross_margin?: number;
 };
 
 export type CreateSaleDTO = {
@@ -161,11 +163,7 @@ export type CreateSaleDTO = {
   customer_address: string;
   customer_phone: string;
   company_id: number;
-  items: {
-    item_id: number;
-    quantity: number;
-    unit_price: number;
-  }[];
+  items: CreateSaleItem[];
   notes: string;
   status: SaleStatus;
 };
