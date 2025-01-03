@@ -100,13 +100,6 @@ export type DailySalesData = {
   quantity: number;
 };
 
-export type TopSellingItem = {
-  item_name: string;
-  sku: string;
-  quantity: number;
-  revenue: number;
-};
-
 export type CompanyAnalysis = {
   company_name: string;
   total_sales: number;
@@ -114,15 +107,20 @@ export type CompanyAnalysis = {
   average_order_value: number;
   items_analysis: SalesAnalysisItemData[];
   daily_sales: DailySalesData[];
-  top_selling_items: TopSellingItem[];
+  top_selling_items: {
+    item_name: string;
+    sku: string;
+    quantity: number;
+    revenue: number;
+  }[];
 };
 
 export type SalesAnalysis = {
+  data: Record<string, CompanyAnalysis>;
   period: {
     start_date: string;
     end_date: string;
   };
-  data: Record<string, CompanyAnalysis>;
 };
 
 export function useSalesAnalysis(startDate: string, endDate: string) {

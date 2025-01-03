@@ -1,26 +1,25 @@
 "use client";
 
 import { LayoutWithNav } from "../layout-with-nav";
-import {
-  useInventoryAnalysis,
-  type CompanyInventory,
-} from "@/hooks/use-inventory";
+import { useSalesAnalysis } from "@/hooks/use-sales";
 import { Loader2 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { format, subYears } from "date-fns";
+import { useState } from "react";
+import { DateRange } from "react-day-picker";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import { Bar, Line } from "react-chartjs-2";
 import {
   Table,
   TableBody,
@@ -29,52 +28,36 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ChartEvent,
-  ActiveElement,
-} from "chart.js";
-import { Bar } from "react-chartjs-2";
-import { useState } from "react";
 
 ChartJS.register(
   CategoryScale,
   LinearScale,
+  PointElement,
+  LineElement,
   BarElement,
   Title,
   Tooltip,
   Legend
 );
 
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      display: false,
-    },
-    title: {
-      display: true,
-      text: "Valore Stock per Azienda",
-    },
-  },
-  scales: {
-    y: {
-      beginAtZero: true,
-    },
-  },
-};
-
 export default function DashboardPage() {
-  const { data: inventoryAnalysis, isLoading } = useInventoryAnalysis();
-  const [selectedCompany, setSelectedCompany] =
-    useState<CompanyInventory | null>(null);
+  const defaultEndDate = new Date();
+  const defaultStartDate = subYears(defaultEndDate, 1);
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: defaultStartDate,
+    to: defaultEndDate,
+  });
+
+  const { data: salesAnalysis, isLoading } = useSalesAnalysis(
+    format(dateRange?.from || defaultStartDate, "yyyy-MM-dd"),
+    format(dateRange?.to || defaultEndDate, "yyyy-MM-dd")
+  );
+
+  const handleDateChange = (range: DateRange | undefined) => {
+    if (range) {
+      setDateRange(range);
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("it-IT", {
@@ -83,182 +66,355 @@ export default function DashboardPage() {
     }).format(amount);
   };
 
-  const companies = inventoryAnalysis
-    ? Object.values(inventoryAnalysis.data)
-    : [];
+  const companies = salesAnalysis ? Object.values(salesAnalysis.data) : [];
 
-  const companyGroups = [];
-  for (let i = 0; i < companies.length; i += 4) {
-    companyGroups.push(companies.slice(i, i + 4));
-  }
-
-  const handleBarClick = (groupIndex: number, localIndex: number) => {
-    const globalIndex = groupIndex * 4 + localIndex;
-    const company = companies[globalIndex];
-    if (company) {
-      setSelectedCompany(company);
-    }
-  };
+  const companyColors = [
+    { bg: "rgba(99, 102, 241, 0.5)", border: "rgb(99, 102, 241)" },
+    { bg: "rgba(251, 146, 60, 0.5)", border: "rgb(251, 146, 60)" },
+    { bg: "rgba(34, 197, 94, 0.5)", border: "rgb(34, 197, 94)" },
+    { bg: "rgba(236, 72, 153, 0.5)", border: "rgb(236, 72, 153)" },
+  ];
 
   return (
     <LayoutWithNav>
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold dark:text-white">Dashboard</h1>
+          <DatePickerWithRange
+            date={dateRange}
+            onDateChange={handleDateChange}
+          />
         </div>
 
         {isLoading ? (
           <div className="flex justify-center items-center h-32">
             <Loader2 className="h-8 w-8 animate-spin text-gray-500 dark:text-gray-400" />
           </div>
-        ) : inventoryAnalysis ? (
-          <div className="px-12">
-            <Carousel>
-              <CarouselContent>
-                {companyGroups.map((group, groupIndex) => (
-                  <CarouselItem key={groupIndex}>
-                    <Card className="p-6">
-                      <CardContent className="h-[400px]">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <div>
-                              <Bar
-                                options={{
-                                  ...chartOptions,
-                                  onClick: (
-                                    _: ChartEvent,
-                                    elements: ActiveElement[]
-                                  ) => {
-                                    if (elements.length > 0) {
-                                      handleBarClick(
-                                        groupIndex,
-                                        elements[0].index
-                                      );
-                                    }
-                                  },
-                                }}
-                                data={{
-                                  labels: group.map(
-                                    (company) => company.company_name
-                                  ),
-                                  datasets: [
-                                    {
-                                      data: group.map(
-                                        (company) => company.total_stock_value
-                                      ),
-                                      backgroundColor:
-                                        "rgba(99, 102, 241, 0.5)",
-                                      borderColor: "rgb(99, 102, 241)",
-                                      borderWidth: 1,
-                                    },
-                                  ],
-                                }}
-                              />
-                            </div>
-                          </DialogTrigger>
-                          {selectedCompany && (
-                            <DialogContent className="max-w-4xl">
-                              <DialogHeader>
-                                <DialogTitle>
-                                  {selectedCompany.company_name}
-                                </DialogTitle>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <p className="text-sm text-gray-500">
-                                  Dettagli dell&apos;inventario per{" "}
-                                  {selectedCompany.company_name}
-                                </p>
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                                      Valore Totale Stock
-                                    </div>
-                                    <div className="text-2xl font-bold">
-                                      {formatCurrency(
-                                        selectedCompany.total_stock_value
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                                      Totale Articoli
-                                    </div>
-                                    <div className="text-2xl font-bold">
-                                      {selectedCompany.total_items}
-                                    </div>
-                                  </div>
-                                </div>
+        ) : companies.length > 0 ? (
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Totale Vendite per Cliente
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[300px]">
+                    <Bar
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            display: false,
+                          },
+                        },
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                          },
+                        },
+                      }}
+                      data={{
+                        labels: companies.map(
+                          (company) => company.company_name
+                        ),
+                        datasets: [
+                          {
+                            data: companies.map(
+                              (company) => company.total_sales
+                            ),
+                            backgroundColor: companies.map(
+                              (_, i) =>
+                                companyColors[i % companyColors.length].bg
+                            ),
+                            borderColor: companies.map(
+                              (_, i) =>
+                                companyColors[i % companyColors.length].border
+                            ),
+                            borderWidth: 1,
+                          },
+                        ],
+                      }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
 
-                                <div>
-                                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                                    Dettaglio Articoli
-                                  </div>
-                                  <div className="border rounded-lg">
-                                    <Table>
-                                      <TableHeader>
-                                        <TableRow>
-                                          <TableHead className="w-[120px]">
-                                            SKU
-                                          </TableHead>
-                                          <TableHead className="w-[200px]">
-                                            Nome
-                                          </TableHead>
-                                          <TableHead className="w-[120px]">
-                                            Stock
-                                          </TableHead>
-                                          <TableHead className="w-[120px]">
-                                            Prezzo
-                                          </TableHead>
-                                          <TableHead className="w-[120px]">
-                                            Valore Stock
-                                          </TableHead>
-                                        </TableRow>
-                                      </TableHeader>
-                                      <TableBody>
-                                        {selectedCompany.items_detail.map(
-                                          (item) => (
-                                            <TableRow key={item.sku}>
-                                              <TableCell className="font-medium">
-                                                {item.sku}
-                                              </TableCell>
-                                              <TableCell>
-                                                {item.item_name}
-                                              </TableCell>
-                                              <TableCell>
-                                                {item.current_stock}{" "}
-                                                {item.stock_unit}
-                                              </TableCell>
-                                              <TableCell>
-                                                {formatCurrency(
-                                                  item.current_price
-                                                )}
-                                              </TableCell>
-                                              <TableCell>
-                                                {formatCurrency(
-                                                  item.stock_value
-                                                )}
-                                              </TableCell>
-                                            </TableRow>
-                                          )
-                                        )}
-                                      </TableBody>
-                                    </Table>
-                                  </div>
-                                </div>
-                              </div>
-                            </DialogContent>
-                          )}
-                        </Dialog>
-                      </CardContent>
-                    </Card>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious />
-              <CarouselNext />
-            </Carousel>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Articoli Venduti per Cliente
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[300px]">
+                    <Bar
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            display: false,
+                          },
+                        },
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                          },
+                        },
+                      }}
+                      data={{
+                        labels: companies.map(
+                          (company) => company.company_name
+                        ),
+                        datasets: [
+                          {
+                            data: companies.map(
+                              (company) => company.total_items_sold
+                            ),
+                            backgroundColor: companies.map(
+                              (_, i) =>
+                                companyColors[i % companyColors.length].bg
+                            ),
+                            borderColor: companies.map(
+                              (_, i) =>
+                                companyColors[i % companyColors.length].border
+                            ),
+                            borderWidth: 1,
+                          },
+                        ],
+                      }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Valore Medio Ordine per Cliente
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[300px]">
+                    <Bar
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            display: false,
+                          },
+                        },
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                          },
+                        },
+                      }}
+                      data={{
+                        labels: companies.map(
+                          (company) => company.company_name
+                        ),
+                        datasets: [
+                          {
+                            data: companies.map(
+                              (company) => company.average_order_value
+                            ),
+                            backgroundColor: companies.map(
+                              (_, i) =>
+                                companyColors[i % companyColors.length].bg
+                            ),
+                            borderColor: companies.map(
+                              (_, i) =>
+                                companyColors[i % companyColors.length].border
+                            ),
+                            borderWidth: 1,
+                          },
+                        ],
+                      }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Andamento Vendite per Cliente</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[400px]">
+                  <Line
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          position: "top" as const,
+                        },
+                      },
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                        },
+                      },
+                    }}
+                    data={{
+                      labels: Array.from(
+                        new Set(
+                          companies.flatMap((company) =>
+                            company.daily_sales.map((day) => day.date)
+                          )
+                        )
+                      ).sort(),
+                      datasets: companies.map((company, index) => ({
+                        label: company.company_name,
+                        data: company.daily_sales.map((day) => ({
+                          x: day.date,
+                          y: day.revenue,
+                        })),
+                        borderColor:
+                          companyColors[index % companyColors.length].border,
+                        backgroundColor:
+                          companyColors[index % companyColors.length].bg,
+                        tension: 0.4,
+                      })),
+                    }}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Valore Stock per Cliente</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[400px]">
+                  <Bar
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      indexAxis: "y" as const,
+                      plugins: {
+                        legend: {
+                          display: false,
+                        },
+                        tooltip: {
+                          callbacks: {
+                            label: (context) => {
+                              return [
+                                `Valore Stock: ${formatCurrency(
+                                  context.raw as number
+                                )}`,
+                                `Articoli: ${
+                                  companies[context.dataIndex].items_analysis
+                                    .length
+                                }`,
+                              ];
+                            },
+                          },
+                        },
+                      },
+                      scales: {
+                        x: {
+                          beginAtZero: true,
+                          title: {
+                            display: true,
+                            text: "Valore Stock (€)",
+                          },
+                        },
+                        y: {
+                          title: {
+                            display: true,
+                            text: "Cliente",
+                          },
+                        },
+                      },
+                    }}
+                    data={{
+                      labels: companies.map((company) => company.company_name),
+                      datasets: [
+                        {
+                          data: companies.map((company) =>
+                            company.items_analysis.reduce(
+                              (acc, item) =>
+                                acc + item.average_price * item.total_quantity,
+                              0
+                            )
+                          ),
+                          backgroundColor: companies.map(
+                            (_, i) => companyColors[i % companyColors.length].bg
+                          ),
+                          borderColor: companies.map(
+                            (_, i) =>
+                              companyColors[i % companyColors.length].border
+                          ),
+                          borderWidth: 1,
+                        },
+                      ],
+                    }}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Dettaglio Articoli per Cliente</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead>SKU</TableHead>
+                        <TableHead>Nome</TableHead>
+                        <TableHead className="text-right">Quantità</TableHead>
+                        <TableHead className="text-right">
+                          Prezzo Medio
+                        </TableHead>
+                        <TableHead className="text-right">
+                          Ricavo Totale
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {companies.flatMap((company) =>
+                        company.items_analysis.map((item) => (
+                          <TableRow key={`${company.company_name}-${item.sku}`}>
+                            <TableCell>{company.company_name}</TableCell>
+                            <TableCell className="font-medium">
+                              {item.sku}
+                            </TableCell>
+                            <TableCell>{item.item_name}</TableCell>
+                            <TableCell className="text-right">
+                              {item.total_quantity}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {formatCurrency(item.average_price)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {formatCurrency(item.total_revenue)}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        ) : null}
+        ) : (
+          <div className="text-center text-gray-500 dark:text-gray-400">
+            Nessun dato disponibile per il periodo selezionato
+          </div>
+        )}
       </div>
     </LayoutWithNav>
   );
