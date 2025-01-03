@@ -93,7 +93,6 @@ export default function AnalyticsPage() {
                   {company.company_name}
                 </h2>
 
-                {/* Statistiche generali */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <Card>
                     <CardHeader className="pb-2">
@@ -133,7 +132,6 @@ export default function AnalyticsPage() {
                   </Card>
                 </div>
 
-                {/* Grafico vendite giornaliere */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Andamento Vendite</CardTitle>
@@ -181,7 +179,6 @@ export default function AnalyticsPage() {
                   </CardContent>
                 </Card>
 
-                {/* Grafico articoli più venduti */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Articoli Più Venduti</CardTitle>
@@ -223,7 +220,6 @@ export default function AnalyticsPage() {
                   </CardContent>
                 </Card>
 
-                {/* Tabella analisi articoli */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Dettaglio Articoli</CardTitle>
