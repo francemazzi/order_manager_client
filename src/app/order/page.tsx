@@ -27,6 +27,7 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -221,6 +222,10 @@ export default function OrderPage() {
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>Crea Nuovo Ordine</DialogTitle>
+                    <DialogDescription>
+                      Seleziona gli articoli e inserisci le quantità per creare
+                      un nuovo ordine
+                    </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
@@ -381,6 +386,9 @@ export default function OrderPage() {
           <DialogContent className="max-w-3xl">
             <DialogHeader>
               <DialogTitle>Dettagli Ordine #{selectedOrder?.id}</DialogTitle>
+              <DialogDescription>
+                Visualizza i dettagli completi dell&apos;ordine selezionato
+              </DialogDescription>
             </DialogHeader>
             {isLoadingOrder ? (
               <div className="flex justify-center p-4">

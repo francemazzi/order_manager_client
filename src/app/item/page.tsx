@@ -200,8 +200,6 @@ export default function ItemPage() {
                   >
                     <Plus className="h-4 w-4" />
                     Aggiungi articolo a questo fornitore
-                    {/* Nuovo articolo in{" "}
-                    {companies?.find((c) => c.id === selectedCompanyId)?.name} */}
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
