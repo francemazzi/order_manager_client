@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,6 +39,11 @@ export default function ItemPage() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(
     null
   );
+
+  const supplierCompanies = companies?.filter(
+    (company) => company.tag === "supplier"
+  );
+
   const { data: items, isLoading, error } = useItems(selectedCompanyId || 0);
   const createItem = useCreateItem();
   const updateItem = useUpdateItem();
@@ -177,7 +183,7 @@ export default function ItemPage() {
                     <SelectValue placeholder="Seleziona un'azienda" />
                   </SelectTrigger>
                   <SelectContent>
-                    {companies?.map((company) => (
+                    {supplierCompanies?.map((company) => (
                       <SelectItem key={company.id} value={String(company.id)}>
                         {company.name}
                       </SelectItem>
@@ -201,6 +207,9 @@ export default function ItemPage() {
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Crea Nuovo Articolo</DialogTitle>
+                    <DialogDescription>
+                      Inserisci i dettagli del nuovo articolo
+                    </DialogDescription>
                   </DialogHeader>
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
@@ -245,8 +254,6 @@ export default function ItemPage() {
                         <Input
                           id="price"
                           type="number"
-                          min={0}
-                          step={0.01}
                           value={formData.price}
                           onChange={(e) =>
                             setFormData({
@@ -526,6 +533,9 @@ export default function ItemPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Dettagli Articolo</DialogTitle>
+              <DialogDescription>
+                Visualizza i dettagli completi dell&apos;articolo selezionato
+              </DialogDescription>
             </DialogHeader>
             {isLoadingItem ? (
               <div className="flex justify-center p-4">

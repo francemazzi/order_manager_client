@@ -34,6 +34,9 @@ import {
 
 export default function OrderPage() {
   const { data: companies } = useCompanies();
+  const supplierCompanies = companies?.filter(
+    (company) => company.tag === "supplier"
+  );
   const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(
     null
   );
@@ -196,7 +199,7 @@ export default function OrderPage() {
                     <SelectValue placeholder="Seleziona un fornitore" />
                   </SelectTrigger>
                   <SelectContent>
-                    {companies?.map((company) => (
+                    {supplierCompanies?.map((company) => (
                       <SelectItem key={company.id} value={String(company.id)}>
                         {company.name}
                       </SelectItem>
