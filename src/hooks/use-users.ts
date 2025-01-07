@@ -49,18 +49,31 @@ export function useCreateUser() {
 
   return useMutation({
     mutationFn: async (data: CreateUserDTO) => {
+      console.log("Sending data to server:", data);
       const response = await fetch(`${urlPy}/api/users`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+          first_name: data.first_name,
+          last_name: data.last_name,
+          role: data.role,
+          company_id: Number(data.company_id),
+          is_active: data.is_active,
+        }),
       });
       if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error("Server error:", errorData);
         throw new Error("Failed to create user");
       }
-      return response.json() as Promise<User>;
+      const responseData = await response.json();
+      console.log("Server response:", responseData);
+      return responseData as User;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });

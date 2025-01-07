@@ -1,34 +1,58 @@
 "use client";
 
 import { Input } from "./input";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "./select";
 
 export interface EditableCellWithSelectProps {
   value: string;
+  displayValue?: string;
   isEditing: boolean;
-  onChange: (value: string) => void;
+  isSelect?: boolean;
   type?: string;
-  onClick?: (e: React.MouseEvent) => void;
+  options?: { label: string; value: string }[];
+  onChange: (value: string) => void;
 }
 
 export function EditableCellWithSelect({
   value,
+  displayValue,
   isEditing,
-  onChange,
+  isSelect,
   type = "text",
-  onClick,
+  options = [],
+  onChange,
 }: EditableCellWithSelectProps) {
-  const displayValue = value || "";
-
   if (isEditing) {
+    if (isSelect) {
+      return (
+        <Select value={value} onValueChange={onChange}>
+          <SelectTrigger className="h-8">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
+    }
     return (
       <Input
         type={type}
-        value={displayValue}
+        value={value}
         onChange={(e) => onChange(e.target.value)}
-        onClick={onClick}
+        className="h-8"
       />
     );
   }
-
-  return <div onClick={onClick}>{displayValue}</div>;
+  return <span>{displayValue || value}</span>;
 }

@@ -193,3 +193,146 @@ export function useCreateSale() {
     },
   });
 }
+
+export type BrandAverages = {
+  averages: number[];
+  brands: string[];
+};
+
+export function useBrandAverages(period: "monthly" | "weekly") {
+  const urlPy = process.env.NEXT_PUBLIC_URL_PY;
+  if (!urlPy) {
+    throw new Error("NEXT_PUBLIC_URL_PY is not defined");
+  }
+
+  return useQuery({
+    queryKey: ["brand-averages", period],
+    queryFn: async () => {
+      const response = await fetch(
+        `${urlPy}/api/analytics/dashboard/brands/average-sales?period=${period}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch brand averages");
+      }
+      return response.json() as Promise<BrandAverages>;
+    },
+  });
+}
+
+export type BrandPopularity = {
+  brands: string[];
+  popularity: number[];
+};
+
+export function useBrandPopularity() {
+  const urlPy = process.env.NEXT_PUBLIC_URL_PY;
+  if (!urlPy) {
+    throw new Error("NEXT_PUBLIC_URL_PY is not defined");
+  }
+
+  return useQuery({
+    queryKey: ["brand-popularity"],
+    queryFn: async () => {
+      const response = await fetch(
+        `${urlPy}/api/analytics/dashboard/brands/popularity`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch brand popularity");
+      }
+      return response.json() as Promise<BrandPopularity>;
+    },
+  });
+}
+
+export type BrandSales = {
+  brands: string[];
+  sales: number[];
+};
+
+export function useBrandSales() {
+  const urlPy = process.env.NEXT_PUBLIC_URL_PY;
+  if (!urlPy) {
+    throw new Error("NEXT_PUBLIC_URL_PY is not defined");
+  }
+
+  return useQuery({
+    queryKey: ["brand-sales"],
+    queryFn: async () => {
+      const response = await fetch(
+        `${urlPy}/api/analytics/dashboard/brands/sales`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch brand sales");
+      }
+      return response.json() as Promise<BrandSales>;
+    },
+  });
+}
+
+export type TopItemsResponse = {
+  data: {
+    summary: {
+      average_price: number;
+      total_items_sold: number;
+      total_revenue: number;
+    };
+    top_items: {
+      average_price: number;
+      company: {
+        id: number;
+        name: string;
+      };
+      current_stock: number;
+      item_id: number;
+      item_name: string;
+      orders_count: number;
+      sku: string;
+      total_quantity: number;
+      total_revenue: number;
+    }[];
+  };
+  period: {
+    end_date: string;
+    start_date: string;
+  };
+};
+
+export function useTopItems(startDate: string, endDate: string) {
+  const urlPy = process.env.NEXT_PUBLIC_URL_PY;
+  if (!urlPy) {
+    throw new Error("NEXT_PUBLIC_URL_PY is not defined");
+  }
+
+  return useQuery({
+    queryKey: ["top-items", startDate, endDate],
+    queryFn: async () => {
+      const response = await fetch(
+        `${urlPy}/api/analytics/items/top?start_date=${startDate}&end_date=${endDate}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch top items");
+      }
+      return response.json() as Promise<TopItemsResponse>;
+    },
+  });
+}

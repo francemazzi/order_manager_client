@@ -74,7 +74,30 @@ export default function UsersPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createUser.mutateAsync(formData);
+      if (!formData.company_id) {
+        toast({
+          title: "Errore",
+          description: "Seleziona un'azienda",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const dataToSubmit = {
+        email: formData.email,
+        password: formData.password,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        role: formData.role,
+        company_id: Number(formData.company_id),
+        is_active: formData.is_active,
+      };
+
+      console.log("Data being submitted:", dataToSubmit);
+
+      const response = await createUser.mutateAsync(dataToSubmit);
+      console.log("Server response:", response);
+
       toast({
         title: "Successo",
         description: "Utente creato con successo",
@@ -89,7 +112,8 @@ export default function UsersPage() {
         company_id: null,
         is_active: true,
       });
-    } catch {
+    } catch (error) {
+      console.error("Error creating user:", error);
       toast({
         title: "Errore",
         description: "Impossibile creare l'utente",
@@ -244,27 +268,26 @@ export default function UsersPage() {
                     <div className="space-y-2">
                       <Label htmlFor="company">Azienda</Label>
                       <Select
-                        value={
-                          formData.company_id
-                            ? String(formData.company_id)
-                            : "null"
-                        }
-                        onValueChange={(value) =>
-                          setFormData({
-                            ...formData,
-                            company_id: value === "null" ? null : Number(value),
-                          })
-                        }
+                        value={formData.company_id?.toString()}
+                        onValueChange={(value) => {
+                          console.log("Selected company value:", value);
+                          const companyId = parseInt(value, 10);
+                          console.log("Parsed company ID:", companyId);
+                          setFormData((prev) => ({
+                            ...prev,
+                            company_id: companyId,
+                          }));
+                        }}
+                        required
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Seleziona un'azienda" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="null">Lavora con noi</SelectItem>
                           {companies?.map((company) => (
                             <SelectItem
                               key={company.id}
-                              value={String(company.id)}
+                              value={company.id.toString()}
                             >
                               {company.name}
                             </SelectItem>
